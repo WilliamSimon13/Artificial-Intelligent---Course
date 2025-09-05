@@ -2,72 +2,49 @@ import cv2
 import numpy as np
 import imutils
 
-def callback(value):
-    pass
+cap = cv2.VideoCapture(0)
 
-# Tạo trackbar để chỉnh HSV
-def setup_trackbars(range_filter):
-    cv2.namedWindow("Trackbars")
+while True:
+    ret, frame = cap.read()
+    if not ret:
+        break
 
-    for i in ["MIN", "MAX"]:
-        v = 0 if i == "MIN" else 255
-        for j in range_filter:
-            cv2.createTrackbar("%s_%s" % (j, i), "Trackbars", v, 255, callback)
+    # Làm mượt ảnh để giảm nhiễu
+    blur = cv2.GaussianBlur(frame, (11, 11), 0)
 
-def get_trackbar_values(range_filter):
-    values = []
-    for i in ["MIN", "MAX"]:
-        for j in range_filter:
-            v = cv2.getTrackbarPos("%s_%s" % (j, i), "Trackbars")
-            values.append(v)
-    return values
+    # Chuyển sang không gian màu HSV
+    hsv = cv2.cvtColor(blur, cv2.COLOR_BGR2HSV)
 
-def main():
-    range_filter = "HSV"
-    cap = cv2.VideoCapture(0)
+    # Ngưỡng màu (ví dụ: đỏ)
+    lower = np.array([15, 128, 33])
+    upper = np.array([186, 255, 255])
 
-    setup_trackbars(range_filter)
+    # Tạo mask nhị phân cho vùng màu trong khoảng [lower, upper]
+    mask = cv2.inRange(hsv, lower, upper)
 
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            continue   # bỏ qua frame lỗi, không thoát luôn
+    # Xử lý hình thái học để loại bỏ nhiễu
+    mask = cv2.erode(mask, None, iterations=2)
+    mask = cv2.dilate(mask, None, iterations=2)
 
-        # Làm mượt ảnh
-        blur = cv2.GaussianBlur(frame, (11, 11), 0)
-        hsv = cv2.cvtColor(blur, cv2.COLOR_BGR2HSV)
+    # Tìm contours
+    ball_cnts = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    ball_cnts = imutils.grab_contours(ball_cnts)
 
-        # Lấy giá trị HSV từ trackbar
-        v1_min, v2_min, v3_min, v1_max, v2_max, v3_max = get_trackbar_values(range_filter)
-        lower = np.array([v1_min, v2_min, v3_min])
-        upper = np.array([v1_max, v2_max, v3_max])
+    if len(ball_cnts) > 0:
+        # Chọn contour có diện tích lớn nhất
+        c = max(ball_cnts, key=cv2.contourArea)
+        (x, y), radius = cv2.minEnclosingCircle(c)
 
-        # Tạo mask
-        mask = cv2.inRange(hsv, lower, upper)
-        mask = cv2.erode(mask, None, iterations=2)
-        mask = cv2.dilate(mask, None, iterations=2)
+        if radius > 10:
+            cv2.circle(frame, (int(x), int(y)), int(radius), (0, 0, 255), 2)
 
-        # Tìm contours
-        cnts = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        cnts = imutils.grab_contours(cnts)
+    # Hiển thị kết quả
+    cv2.imshow("frame", frame)
+    cv2.imshow("mask", mask)
 
-        if len(cnts) > 0:
-            c = max(cnts, key=cv2.contourArea)
-            (x, y), radius = cv2.minEnclosingCircle(c)
+    # Nhấn phím 'q' để thoát
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
 
-            if radius > 10:
-                cv2.circle(frame, (int(x), int(y)), int(radius), (0, 0, 255), 2)
-
-        # Hiển thị
-        cv2.imshow("Frame", frame)
-        cv2.imshow("Mask", mask)
-
-        # Nhấn 'q' để thoát
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
-
-    cap.release()
-    cv2.destroyAllWindows()
-
-if __name__ == "__main__":
-    main()
+cap.release()
+cv2.destroyAllWindows()
