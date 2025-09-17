@@ -57,3 +57,5 @@ theta_init = np.random.rand(1,X.shape[1])[0]
 print('Theta = ', theta, 'Iteration = ', it)
 
 np.savetxt('theta.txt', theta)
+import numpy as np
+theta = np.loadtxt('theta.txt')
