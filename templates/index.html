@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Character Recognition</title>
+    <style>
+        body {
+            text-align: center;
+            font-family: Arial, sans-serif;
+        }
+        canvas {
+            border: 2px solid black;
+            margin-top: 20px;
+            background-color: white;
+        }
+        button {
+            margin: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        #clearBtn {
+            background-color: red;
+            color: white;
+        }
+        #predictBtn {
+            background-color: green;
+            color: white;
+        }
+        select {
+            margin: 0 10px;
+        }
+    </style>
+</head>
+<body>
+    <h2>Character Recognition</h2>
+    Line width:
+    <select id="lineWidth">
+        <option value="10">10</option>
+        <option value="20" selected>20</option>
+        <option value="30">30</option>
+    </select>
+    Color:
+    <select id="color">
+        <option value="black" selected>black</option>
+        <option value="blue">blue</option>
+        <option value="red">red</option>
+        <option value="green">green</option>
+        <option value="gray">gray</option>
+    </select>
+
+    <br>
+    <canvas id="canvas" width="280" height="280"></canvas>
+    <br>
+    <button id="clearBtn">Clear Canvas</button>
+    <button id="predictBtn">Recognize</button>
+
+    <h3>Result: <span id="result"> </span></h3>
+
+    <script>
+        const canvas = document.getElementById("canvas");
+        const ctx = canvas.getContext("2d");
+        const clearBtn = document.getElementById("clearBtn");
+        const predictBtn = document.getElementById("predictBtn");
+        const resultSpan = document.getElementById("result");
+
+        let drawing = false;
+
+        ctx.fillStyle = "white";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        canvas.addEventListener("mousedown", e => {
+            drawing = true;
+            ctx.beginPath();
+            ctx.moveTo(e.offsetX, e.offsetY);
+        });
+
+        canvas.addEventListener("mousemove", e => {
+            if (drawing) {
+                ctx.lineTo(e.offsetX, e.offsetY);
+                ctx.strokeStyle = document.getElementById("color").value;
+                ctx.lineWidth = document.getElementById("lineWidth").value;
+                ctx.lineCap = "round";
+                ctx.lineJoin = "round";
+                ctx.stroke();
+            }
+        });
+
+        canvas.addEventListener("mouseup", () => {
+            drawing = false;
+        });
+
+        clearBtn.addEventListener("click", () => {
+            ctx.fillStyle = "white";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            resultSpan.textContent = "";
+        });
+
+        predictBtn.addEventListener("click", () => {
+            const imageBase64 = canvas.toDataURL("image/jpeg").split(",")[1];
+
+            fetch("/recognize", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ image: imageBase64 })
+            })
+            .then(res => res.json())
+            .then(data => {
+                resultSpan.textContent = data.prediction;
+            })
+            .catch(err => {
+                console.error(err);
+                resultSpan.textContent = "Error!";
+            });
+        });
+    </script>
+</body>
+</html>
