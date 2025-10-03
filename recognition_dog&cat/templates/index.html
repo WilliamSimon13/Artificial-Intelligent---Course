@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+
+
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>Dog, Cat, or Horse Classifier</title>
+   <style>
+       body {
+           font-family: Arial, sans-serif;
+           display: flex;
+           justify-content: center;
+           align-items: center;
+           height: 100vh;
+           background-color: #f0f0f0;
+           margin: 0;
+       }
+
+
+       .container {
+           text-align: center;
+           background-color: white;
+           padding: 30px;
+           border-radius: 8px;
+           box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+           width: 800px;
+       }
+
+
+       input[type="file"] {
+           display: none;
+       }
+
+
+       .upload-btn {
+           background-color: #4CAF50;
+           color: white;
+           padding: 10px 20px;
+           border: none;
+           border-radius: 5px;
+           cursor: pointer;
+       }
+
+
+       .upload-btn:hover {
+           background-color: #45a049;
+       }
+
+
+       .animal-container {
+           display: flex;
+           justify-content: space-around;
+           margin-top: 30px;
+       }
+
+
+       .animal-column {
+           width: 30%;
+           text-align: center;
+       }
+
+
+       .animal-column h3 {
+           margin-bottom: 15px;
+       }
+
+
+       .animal-column img {
+           width: 100%;
+           height: auto;
+           border-radius: 10px;
+           margin-bottom: 10px;
+       }
+   </style>
+</head>
+
+
+<body>
+   <div class="container">
+       <h1>Dog, Cat, or Horse Classifier</h1>
+
+
+       <!-- Upload Section -->
+       <form id="uploadForm" enctype="multipart/form-data">
+           <label for="file-upload" class="upload-btn">Choose Image</label>
+           <input id="file-upload" type="file" name="file">
+       </form>
+
+
+       <!-- Animal Columns -->
+       <div class="animal-container">
+           <div class="animal-column" id="dogColumn">
+               <h3>Dog</h3>
+           </div>
+
+
+           <div class="animal-column" id="catColumn">
+               <h3>Cat</h3>
+           </div>
+
+
+           <div class="animal-column" id="horseColumn">
+               <h3>Horse</h3>
+           </div>
+       </div>
+   </div>
+
+
+   <script>
+       const uploadForm = document.getElementById('uploadForm');
+       const fileInput = document.getElementById('file-upload');
+       const dogColumn = document.getElementById('dogColumn');
+       const catColumn = document.getElementById('catColumn');
+       const horseColumn = document.getElementById('horseColumn');
+
+
+       fileInput.addEventListener('change', () => {
+           const formData = new FormData(uploadForm);
+
+
+           fetch('/', {
+               method: 'POST',
+               body: formData
+           })
+               .then(response => response.json())
+               .then(data => {
+                   const img = document.createElement('img');
+                   img.src = data.file_path;
+                   img.alt = data.prediction;
+
+
+                   // Thêm ảnh vào cột dựa trên dự đoán
+                   if (data.prediction === 'Dog') {
+                       dogColumn.appendChild(img);
+                   } else if (data.prediction === 'Cat') {
+                       catColumn.appendChild(img);
+                   } else if (data.prediction === 'Horse') {
+                       horseColumn.appendChild(img);
+                   }
+               })
+               .catch(error => {
+                   console.error('Error:', error);
+               });
+       });
+   </script>
+</body>
+
+
+</html>
